@@ -1,0 +1,3 @@
+*.mp4
+figures3/*.png
+libs/__pycache__/

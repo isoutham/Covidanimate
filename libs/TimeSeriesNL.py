@@ -1,6 +1,8 @@
 import pandas as pd
 import geopandas as gpd
 import csv
+import math
+
 
 class TimeSeriesNL(object):
 
@@ -8,32 +10,39 @@ class TimeSeriesNL(object):
     MAPS = {'Gemeentecode': 'maps/gemeente-2019.geojson',
             'Provincienaam': 'maps/provincies.geojson'
             }
+    key = 'Gemeentecode'
     RECOVERY_WINDOW = 14
 
     def __init__(self):
+        self.map_df = None
+        self.gemsdf = None
         self.target = 'Totaal'
-        self.set_gemeente()
-
-    def set_gemeente(self):
-        self.key = 'Gemeentecode'
         self.get_maps()
-
-    def set_provincie(self):
-        self.key = 'Provincienaam'
-        self.get_maps()
-        self.map_df.at[2, 'name'] = 'Friesland'
-
-    def is_gemeente(self):
-        return self.key == 'Gemeentecode'
 
     def merge(self):
-        if self.is_gemeente():
-            self.merged = self.map_df.set_index('Gemnr').join(self.df2)
-        else:
-            self.merged = self.map_df.set_index('name').join(self.df2)
+        self.merged = self.map_df.join(self.df2)
+        self.do_calculations()
+        print(self.merged)
+
+    def do_calculations(self):
+        print(self.merged['2020-09-01'].max())
+        print(self.merged['aantal'].max())
+        for column in self.merged.columns:
+            if column.startswith('20'):
+                self.merged[column] = self.merged[column] / \
+                    (self.merged['aantal'] / 100000)
+
+    def get_max(self):
+        maxval = self.merged[self.merged.columns[-1]].max()
+        return int(math.ceil(maxval / 100.0)) * 100
 
     def get_maps(self):
-        self.map_df = gpd.read_file(self.MAPS[self.key])
+        if self.map_df is None:
+            self.map_df = gpd.read_file(self.MAPS[self.key])
+        return self.map_df
+
+    def set_map(self, df):
+        self.map_df = df
 
     def get_merged(self):
         return self.merged
@@ -41,12 +50,14 @@ class TimeSeriesNL(object):
     def process(self):
         reader = csv.DictReader(open(self.MUNICIPAL))
         data = {}
+        gems = {}
         dte = ''
         h = None
         for row in reader:
             # ['Datum', 'Gemeentecode', 'Gemeentenaam', 'Provincienaam', 'Provinciecode', 'Type', 'Aantal', 'AantalCumulatief']
+            gems[row['Gemeentenaam']] = row['Gemeentecode']
             try:
-                cnt = int(row['Aantal'])
+                cnt = int(row['AantalCumulatief'])
             except:
                 cnt = 0
             if row[self.key] == '':
@@ -60,17 +71,8 @@ class TimeSeriesNL(object):
             if self.target == row['Type']:
                 if cnt > 0:
                     data[dte][row[self.key]] += cnt
-        df = pd.DataFrame.from_dict(data, orient='index')
-        df2 = df.copy()
-        for col in df.columns:
-            df[col + '-rpd'] = df[col].shift(self.RECOVERY_WINDOW)
-            df[col + '-cin'] = df[col].cumsum()
-            df[col + '-cre'] = df[col + '-rpd'].cumsum()
-            df = df.fillna(0)
-            df[col + '-cac'] = df[col + '-cin'] - df[col + '-cre']
-            df2[col] = df[col + '-cin']
-        df2 = df2.T
-        if self.is_gemeente():
-            df2.index = df2.index.map(int)
-        self.df2 = df2
-
+        df = pd.DataFrame.from_dict(data, orient='columns')
+        self.gemsdf = pd.DataFrame(list(gems.items()),
+                                   columns=['name', 'code'])
+        df.index = df.index.map(int)
+        self.df2 = df

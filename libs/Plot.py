@@ -4,6 +4,7 @@ import seaborn as sns
 import glob
 import imageio
 
+
 class Plot(object):
 
     FIGURES = 'figures3/'
@@ -15,10 +16,7 @@ class Plot(object):
         files = glob.glob(self.FIGURES + '*.png')
         for f in files:
             os.remove(f)
-        if self.ts.is_gemeente():
-            self.vmin, self.vmax = 0, 500
-        else:
-            self.vmin, self.vmax = 0, 5000
+        self.vmin, self.vmax = 0, ts.get_max()
 
     def make_frames(self):
         count = 9999
@@ -36,6 +34,7 @@ class Plot(object):
                                   ax=self.ax, edgecolor='0.8', legend=True, vmax=self.vmax)
         self.ax.axis('off')
         plt.title('The Netherlands ' + date)
+        plt.figtext(0.5, 0.05, "Cases per 100.000 inhabitants", ha="center", fontsize=10, bbox={"facecolor":"white", "alpha":0.5, "pad":5})
         plt.savefig('figures3/%s.png' % date)
         plt.close(self.fig)
 
@@ -48,8 +47,5 @@ class Plot(object):
         idata = []
         for i in sorted(images):
             idata.append(imageio.imread(i))
-        if self.ts.is_gemeente():
-            fn = 'Gemeente_choropleth.mp4'
-        else:
-            fn = 'Provincie_choropleth.mp4'
+        fn = 'Gemeente_choropleth.mp4'
         imageio.mimsave(fn, idata)

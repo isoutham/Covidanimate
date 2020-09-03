@@ -22,11 +22,8 @@ class TimeSeriesNL(object):
     def merge(self):
         self.merged = self.map_df.join(self.df2)
         self.do_calculations()
-        print(self.merged)
 
     def do_calculations(self):
-        print(self.merged['2020-09-01'].max())
-        print(self.merged['aantal'].max())
         for column in self.merged.columns:
             if column.startswith('20'):
                 self.merged[column] = self.merged[column] / \

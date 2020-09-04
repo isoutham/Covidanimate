@@ -10,6 +10,7 @@ class Population(object):
     def get_map(self):
         return self.gemmap
 
+
 class PopulationNL(Population):
 
     DATA = 'data/Regionale_kerncijfers_Nederland_31082020_181423.csv'
@@ -40,7 +41,7 @@ class PopulationUK(Population):
         df = pd.read_csv(self.DATA,  delimiter=';')
         df2 = self.ts.get_maps()
         df = df[df['AGE GROUP'].isin(['All ages'])]
-        interesting = [ 'CODE', 'AREA','2018' ]
+        interesting = ['CODE', 'AREA', '2018']
         df = df[interesting]
         self.gemmap = df2.set_index("lad17cd").join(df.set_index('CODE'))
         self.gemmap = self.gemmap.dropna()

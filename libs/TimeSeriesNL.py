@@ -39,6 +39,7 @@ class TimeSeries(object):
     def get_cc(self):
         return self.cc
 
+
 class TimeSeriesUK(TimeSeries):
 
     MUNICIPAL = "data/uk.csv"
@@ -81,7 +82,7 @@ class TimeSeriesUK(TimeSeries):
         self.do_calculations()
 
     def do_calculations(self):
-        self.merged['population'] = self.merged['population'].str.replace('.','')
+        self.merged['population'] = self.merged['population'].str.replace('.', '')
         self.merged['population'] = self.merged['population'].astype(float)
         for column in self.merged.columns:
             if column.startswith('20'):

@@ -3,11 +3,19 @@ import pandas as pd
 
 class Population(object):
 
-    DATA = 'data/Regionale_kerncijfers_Nederland_31082020_181423.csv'
-
     def __init__(self, ts):
         self.ts = ts
         self.read()
+
+    def get_map(self):
+        return self.gemmap
+
+class PopulationNL(Population):
+
+    DATA = 'data/Regionale_kerncijfers_Nederland_31082020_181423.csv'
+
+    def __init__(self, ts):
+        super(PopulationNL, self).__init__(ts)
 
     def read(self):
         df = pd.read_csv(self.DATA,  delimiter=';')
@@ -20,5 +28,20 @@ class Population(object):
         self.gemmap = df2.set_index("Gemnr").join(
             self.gemmap.set_index('code'))
 
-    def get_map(self):
-        return self.gemmap
+
+class PopulationUK(Population):
+
+    DATA = 'data/ukpop.csv'
+
+    def __init__(self, ts):
+        super(PopulationUK, self).__init__(ts)
+
+    def read(self):
+        df = pd.read_csv(self.DATA,  delimiter=';')
+        df2 = self.ts.get_maps()
+        df = df[df['AGE GROUP'].isin(['All ages'])]
+        interesting = [ 'CODE', 'AREA','2018' ]
+        df = df[interesting]
+        self.gemmap = df2.set_index("lad17cd").join(df.set_index('CODE'))
+        self.gemmap = self.gemmap.dropna()
+        self.gemmap.rename(columns={"2018": "population"}, inplace=True)

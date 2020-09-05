@@ -1,11 +1,10 @@
-import matplotlib.pyplot as plt
 import os
-import seaborn as sns
+import matplotlib.pyplot as plt
 import glob
 import imageio
 
 
-class Plot(object):
+class Plot:
 
     FIGURES = 'figures3/'
 
@@ -13,6 +12,8 @@ class Plot(object):
         self.ts = ts
         plt.style.use('fivethirtyeight')
         self.cmap = 'Oranges'
+        self.fig = None
+        self.ax = None
         files = glob.glob(self.FIGURES + '*.png')
         for f in files:
             os.remove(f)

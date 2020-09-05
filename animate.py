@@ -1,10 +1,10 @@
 import sys
 from optparse import OptionParser
-from libs.TimeSeriesNL import TimeSeriesNL
-from libs.TimeSeriesNL import TimeSeriesUK
-from libs.Plot import Plot
-from libs.Population import PopulationNL
-from libs.Population import PopulationUK
+from libs.timeseries import TimeSeriesNL
+from libs.timeseries import TimeSeriesUK
+from libs.plot import Plot
+from libs.population import PopulationNL
+from libs.population import PopulationUK
 
 parser = OptionParser()
 parser.add_option("-n", "--nl",

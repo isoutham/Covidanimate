@@ -5,6 +5,9 @@ import imageio
 
 
 class Plot:
+    """ Create the individual plots which will
+        later become the animation
+        """
 
     FIGURES = 'figures3/'
 

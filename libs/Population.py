@@ -1,28 +1,34 @@
+"""Read in, format and calculate the timeseries"""
 import pandas as pd
 
 
-class Population(object):
+class Population:
+    """Dumb abstract class for specific country populations"""
 
-    def __init__(self, ts):
-        self.ts = ts
+    def __init__(self, timeseries):
+        self.timeseries = timeseries
+        self.gemmap = None
         self.read()
 
     def get_map(self):
+        """Return the merged dataframe"""
         return self.gemmap
+
+    def read(self):
+        """Read in raw data and convert to dataframe"""
 
 
 class PopulationNL(Population):
+    """The Netherlands"""
 
     DATA = 'data/Regionale_kerncijfers_Nederland_31082020_181423.csv'
 
-    def __init__(self, ts):
-        super(PopulationNL, self).__init__(ts)
-
     def read(self):
-        df = pd.read_csv(self.DATA,  delimiter=';')
-        df2 = self.ts.get_maps()
-        self.gemmap = df.set_index("Regio's").join(
-            self.ts.gemsdf.set_index('name'))
+        """Read in raw data and convert to dataframe"""
+        dataframe = pd.read_csv(self.DATA,  delimiter=';')
+        df2 = self.timeseries.get_maps()
+        self.gemmap = dataframe.set_index("Regio's").join(
+            self.timeseries.gemsdf.set_index('name'))
         self.gemmap = self.gemmap.dropna()
         # The joining columns columns must be the same type
         self.gemmap = self.gemmap.astype({'code': int})
@@ -31,18 +37,17 @@ class PopulationNL(Population):
 
 
 class PopulationUK(Population):
+    """England"""
 
     DATA = 'data/ukpop.csv'
 
-    def __init__(self, ts):
-        super(PopulationUK, self).__init__(ts)
-
     def read(self):
-        df = pd.read_csv(self.DATA,  delimiter=';')
-        df2 = self.ts.get_maps()
-        df = df[df['AGE GROUP'].isin(['All ages'])]
+        """Read in raw data and convert to dataframe"""
+        dataframe = pd.read_csv(self.DATA,  delimiter=';')
+        df2 = self.timeseries.get_maps()
+        dataframe = dataframe[dataframe['AGE GROUP'].isin(['All ages'])]
         interesting = ['CODE', 'AREA', '2018']
-        df = df[interesting]
-        self.gemmap = df2.set_index("lad17cd").join(df.set_index('CODE'))
+        dataframe = dataframe[interesting]
+        self.gemmap = df2.set_index("lad17cd").join(dataframe.set_index('CODE'))
         self.gemmap = self.gemmap.dropna()
         self.gemmap.rename(columns={"2018": "population"}, inplace=True)

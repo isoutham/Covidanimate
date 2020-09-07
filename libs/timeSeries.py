@@ -26,6 +26,10 @@ class TimeSeries:
         """Return a geopandas map object"""
         if self.map_df is None:
             self.map_df = gpd.read_file(self.MAPS[self.key])
+        # Scotland
+        self.map_df = self.map_df[~self.map_df['lad17cd'].astype(str).str.startswith('S')]
+        # Northern Ireland
+        self.map_df = self.map_df[~self.map_df['lad17cd'].astype(str).str.startswith('N')]
         return self.map_df
 
     def get_max(self):
@@ -36,6 +40,10 @@ class TimeSeries:
                 if column > maxc:
                     maxc = column
         maxval = self.merged[maxc].max()
+        print('aaaaa')
+        print(self.merged[maxc]['E07000004'])
+        print(self.df2[maxc]['E07000004'])
+        print(self.merged['population']['E07000004'])
         return int(math.ceil(maxval / 100.0)) * 100
 
     def set_map(self, dataframe):
@@ -58,7 +66,7 @@ class TimeSeriesUK(TimeSeries):
     MAPS = {'Counties': 'maps/uk_counties.geojson'
             }
     key = 'Counties'
-    cc = 'England'
+    cc = 'England and Wales'
 
     def process(self):
         """Process the raw data and create a dataframe"""
@@ -71,9 +79,12 @@ class TimeSeriesUK(TimeSeries):
                 cnt = float(row['cumCasesBySpecimenDate'])
             except ValueError:
                 cnt = 0
-            if not row['areaCode'].startswith('E'):
-                continue
             dte = row['date']
+            # For now ignore Scotland
+            if row['areaCode'].startswith('S'):
+                continue
+            if row['areaCode'].startswith('N'):
+                continue
             if row['date'] not in data:
                 data[row['date']] = {}
             if row['areaCode'] not in data[row['date']]:
@@ -82,6 +93,20 @@ class TimeSeriesUK(TimeSeries):
                 if cnt > 0:
                     data[dte][row['areaCode']] += cnt
         self.df2 = pd.DataFrame.from_dict(data, orient='columns')
+        # PHE data is most recent first so reverse order
+        self.df2 = self.df2[self.df2.columns[::-1]]
+        self.df2.fillna(0, inplace=True)
+        # Wales has a few days less data than England so fill in the last
+        # few zeroes to be the last recorded value
+        # This is probably a bonkers way of doing it but I had no better idea
+        # Transform the dataframe into a temporary one
+        df3 = self.df2.T
+        # Fill zero column values in with last know value
+        df3 = df3.mask(df3 == 0).ffill(downcast='infer')
+        # NaN's when there is no value to infer, reset to zero
+        df3.fillna(0, inplace=True)
+        # Assign it back and transform back
+        self.df2 = df3.T
 
     def merge(self):
         """Create a dataframe with map population and counts"""
@@ -92,10 +117,11 @@ class TimeSeriesUK(TimeSeries):
 
     def do_calculations(self):
         """Make calculations"""
-        self.merged['population'] = self.merged['population'].str.replace('.', '')
+        #self.merged['population'] = self.merged['population'].str.replace('.', '')
         self.merged['population'] = self.merged['population'].astype(float)
         for column in self.merged.columns:
             if column.startswith('20'):
+                self.merged[column] = self.merged[column].astype(float)
                 self.merged[column] = self.merged[column] / \
                     (self.merged['population'] / 100000)
 

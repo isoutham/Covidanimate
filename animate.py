@@ -21,11 +21,12 @@ if options.uk:
     ts = TimeSeriesUK()
     ts.process()
     pop = PopulationUK(ts)
+    ts.set_map(pop.get_map())
 if options.nl:
     ts = TimeSeriesNL()
     ts.process()
     pop = PopulationNL(ts)
-ts.set_map(pop.get_map())
+    ts.set_map(pop.get_map())
 ts.merge()
 plot = Plot(ts)
 plot.make_frames()

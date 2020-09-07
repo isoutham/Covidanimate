@@ -37,11 +37,20 @@ class PopulationNL(Population):
 
 
 class PopulationUK(Population):
-    """England"""
+    """United Kingdom"""
 
-    DATA = 'data/ukpop.csv'
+    DATA = 'data/ukpop4.csv'
 
     def read(self):
+        df2 = self.timeseries.get_maps()
+        dataframe = pd.read_csv(self.DATA,  delimiter=',')
+        dataframe = dataframe.groupby(['ladcode20']).agg(sum)
+        dataframe.to_csv('data/popagg.csv')
+        self.gemmap = df2.set_index("lad17cd").join(dataframe)
+        self.gemmap.rename(columns={"population_2019": "population"}, inplace=True)
+        print(self.gemmap['population'])
+
+    def read2(self):
         """Read in raw data and convert to dataframe"""
         dataframe = pd.read_csv(self.DATA,  delimiter=';')
         df2 = self.timeseries.get_maps()
@@ -49,5 +58,4 @@ class PopulationUK(Population):
         interesting = ['CODE', 'AREA', '2018']
         dataframe = dataframe[interesting]
         self.gemmap = df2.set_index("lad17cd").join(dataframe.set_index('CODE'))
-        self.gemmap = self.gemmap.dropna()
         self.gemmap.rename(columns={"2018": "population"}, inplace=True)

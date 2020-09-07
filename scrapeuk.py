@@ -9,18 +9,16 @@ england_only = [
 ]
 
 MUNICIPAL = 'data/uk_areas.csv'
-# LTLA17CD,LTLA17NM,UTLA17CD,UTLA17NM,FID
-## {'\ufeffLTLA17CD': 'E06000001', 'LTLA17NM': 'Hartlepool', 'UTLA17CD': 'E06000001', 'UTLA17NM': 'Hartlepool', 'FID': '1'}
 
 england_only = [
-    'areaType=ltla',
-    #'areaName=E06000001'
+    'areaType=ltla'
 ]
-cases_and_deaths = {
+cases = {
     "date": "date",
     "areaName": "areaName",
     "areaCode": "areaCode",
+    "newCasesBySpecimenDate": "newCasesBySpecimenDate",
     "cumCasesBySpecimenDate": "cumCasesBySpecimenDate"
 }
-api = Cov19API(filters=england_only, structure=cases_and_deaths)
+api = Cov19API(filters=england_only, structure=cases)
 api.get_csv(save_as="data/uk.csv")

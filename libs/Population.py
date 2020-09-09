@@ -45,10 +45,8 @@ class PopulationUK(Population):
         df2 = self.timeseries.get_maps()
         dataframe = pd.read_csv(self.DATA,  delimiter=',')
         dataframe = dataframe.groupby(['ladcode20']).agg(sum)
-        dataframe.to_csv('data/popagg.csv')
-        self.gemmap = df2.set_index("lad17cd").join(dataframe)
+        self.gemmap = df2.set_index("lad19cd").join(dataframe)
         self.gemmap.rename(columns={"population_2019": "population"}, inplace=True)
-        print(self.gemmap['population'])
 
     def read2(self):
         """Read in raw data and convert to dataframe"""
@@ -57,5 +55,5 @@ class PopulationUK(Population):
         dataframe = dataframe[dataframe['AGE GROUP'].isin(['All ages'])]
         interesting = ['CODE', 'AREA', '2018']
         dataframe = dataframe[interesting]
-        self.gemmap = df2.set_index("lad17cd").join(dataframe.set_index('CODE'))
+        self.gemmap = df2.set_index("lad19cd").join(dataframe.set_index('CODE'))
         self.gemmap.rename(columns={"2018": "population"}, inplace=True)

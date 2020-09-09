@@ -3,7 +3,7 @@ Just some visualisations of the spread of covid in NL per Gemmeente or in the UK
 
 The figures used are confirmed cases per 100K population in a specific Area.
 
-If you want to play with it you will need a check out of CoronaWatchNL (for the data).
+If you want to play with it you will need a check out of CoronaWatchNL (for the NL data).  UK data is in the repo (see the notes about scrapeuk below)
 https://github.com/J535D165/CoronaWatchNL
 
 This is a collation of many data sources that is marvellously compiled and maintained by the University of Utrecht.

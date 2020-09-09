@@ -26,10 +26,7 @@ class TimeSeries:
         """Return a geopandas map object"""
         if self.map_df is None:
             self.map_df = gpd.read_file(self.MAPS[self.key])
-        # Scotland
-        self.map_df = self.map_df[~self.map_df['lad17cd'].astype(str).str.startswith('S')]
-        # Northern Ireland
-        self.map_df = self.map_df[~self.map_df['lad17cd'].astype(str).str.startswith('N')]
+        self.process_map()
         return self.map_df
 
     def get_max(self):
@@ -40,10 +37,6 @@ class TimeSeries:
                 if column > maxc:
                     maxc = column
         maxval = self.merged[maxc].max()
-        print('aaaaa')
-        print(self.merged[maxc]['E07000004'])
-        print(self.df2[maxc]['E07000004'])
-        print(self.merged['population']['E07000004'])
         return int(math.ceil(maxval / 100.0)) * 100
 
     def set_map(self, dataframe):
@@ -58,15 +51,23 @@ class TimeSeries:
         """Get the country code"""
         return self.cc
 
+    def process_map(self):
+        """Post processing on maps"""
+
 
 class TimeSeriesUK(TimeSeries):
     """England"""
-
     MUNICIPAL = "data/uk.csv"
-    MAPS = {'Counties': 'maps/uk_counties.geojson'
+    MAPS = {'Counties': 'maps/uk_counties_2020.geojson'
             }
     key = 'Counties'
     cc = 'England and Wales'
+
+    def process_map(self):
+        # Scotland
+        self.map_df = self.map_df[~self.map_df['lad19cd'].astype(str).str.startswith('S')]
+        # Northern Ireland
+        self.map_df = self.map_df[~self.map_df['lad19cd'].astype(str).str.startswith('N')]
 
     def process(self):
         """Process the raw data and create a dataframe"""

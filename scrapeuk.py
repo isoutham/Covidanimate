@@ -1,7 +1,7 @@
+"""
+Grab data from the PHE API
+"""
 from uk_covid19 import Cov19API
-import pandas as pd
-
-endpoint = 'https://api.coronavirus.data.gov.uk/v1/data?'
 
 england_only = [
     'areaType=nation',
@@ -10,8 +10,11 @@ england_only = [
 
 MUNICIPAL = 'data/uk_areas.csv'
 
-england_only = [
+ltla = [
     'areaType=ltla'
+]
+uk = [
+    'areaType=nation'
 ]
 cases = {
     "date": "date",
@@ -20,5 +23,15 @@ cases = {
     "newCasesBySpecimenDate": "newCasesBySpecimenDate",
     "cumCasesBySpecimenDate": "cumCasesBySpecimenDate"
 }
-api = Cov19API(filters=england_only, structure=cases)
+tests = {
+    "date": "date",
+    "areaName": "areaName",
+    "cumPillarOneTestsByPublishDate": "cumPillarOneTestsByPublishDate",
+    "cumPillarTwoTestsByPublishDate": "cumPillarTwoTestsByPublishDate",
+    "cumPillarThreeTestsByPublishDate": "cumPillarThreeTestsByPublishDate"
+}
+#api = Cov19API(filters=uk, structure=tests)
+#api.get_csv(save_as="data/tests.csv")
+
+api = Cov19API(filters=ltla, structure=cases)
 api.get_csv(save_as="data/uk.csv")

@@ -27,7 +27,7 @@ class PopulationNL(Population):
         """Read in raw data and convert to dataframe"""
         dataframe = pd.read_csv(self.DATA,  delimiter=';')
         df2 = self.timeseries.get_maps()
-        self.gemmap = dataframe.set_index("Regio's").join(
+        self.gemmap = dataframe.set_index("Regio").join(
             self.timeseries.gemsdf.set_index('name'))
         self.gemmap = self.gemmap.dropna()
         # The joining columns columns must be the same type

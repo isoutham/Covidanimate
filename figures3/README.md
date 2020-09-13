@@ -1,1 +1,0 @@
-Holds the png files

@@ -52,21 +52,23 @@ def get_one_date(dat, src, map, pop):
 def one_plot(merged, date):
     cmap = 'Oranges'
     plt.style.use('dark_background')
-    fig, axis = plt.subplots(1, figsize=(7, 10))
+    fig, axis = plt.subplots(1, figsize=(7, 8.5))
     style_kwds = {
         'linewidth': 1,
         'markersize': 2,
         'facecolor': 'black',
         'edgecolor': 'black'
     }
+    print(merged['pc'].max())
     axis.set_title(date.strftime('%d-%m-%Y'), color='white', fontsize=20)
-    merged.plot(column='pc', vmax=100, vmin=0,
+    merged.plot(column='pc', vmax=200, vmin=0,
                 ax=axis, legend=False,
                 cmap=cmap, **style_kwds)
     axis.axis('off')
-    plt.figtext(0.5, 0.05, "Covid Confirmed Cases per 100.000 inhabitants",
-                ha="center",
-                fontsize=12, bbox={"facecolor": "white", "alpha": 0.5, "pad": 5})
+    #plt.figtext(0.3, 0.14, "Covid Confirmed Cases per 100.000 inhabitants",
+                #ha="center",
+                #fontsize=12, bbox={"facecolor": "white", "alpha": 0.5, "pad": 5})
+    plt.tight_layout(pad=0.1)
     plt.savefig('figures5/%s.png' % date.strftime('%Y-%m-%d'))
     plt.close(fig)
 

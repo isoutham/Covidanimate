@@ -55,8 +55,9 @@ def one_plot(merged, date):
         'facecolor': 'black',
         'edgecolor': 'black'
     }
+    print(merged['pc'].max())
     axis.set_title(date.strftime('%d-%m-%Y'), color='white', fontsize=20)
-    merged.plot(column='pc', vmax=100, vmin=0,
+    merged.plot(column='pc', vmax=150, vmin=0,
                 ax=axis, legend=False,
                 cmap=cmap, **style_kwds)
     axis.axis('off')
@@ -70,7 +71,6 @@ def animate():
     images = []
     directory = 'figures4/'
     for filename in os.listdir(directory):
-        print(filename)
         if filename < '2020-03-15.png':
             continue
         if filename.endswith(".png"):
@@ -87,7 +87,6 @@ def make_frames():
     src = get_source_data()
 
     for dat in list(set(src['date'])):
-        print(dat)
         merged = get_one_date(dat, src, map, pop)
         one_plot(merged, dat)
 

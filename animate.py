@@ -49,6 +49,12 @@ def process_options():
     parser.add_option("-c", "--country",
                       action="store", default=None, dest="country",
                       help="A comma separated list of countries to animate")
+    parser.add_option("-l", "--league",
+                      action="store_true", default=False, dest="league",
+                      help="League table by Gemeente")
+    parser.add_option("-n", "--nation",
+                      action="store_true", default=False, dest="nation",
+                      help="Data by Nation")
     (options, _) = parser.parse_args()
     regions = parse_regions(options.regions)
     combined = Combine()
@@ -60,6 +66,11 @@ def process_options():
             print('You must specify a region to graph with -g')
             sys.exit(1)
         plot.gemeente_graph()
+    if options.league:
+        combined.project_for_date(None)
+    if options.nation:
+        combined.nation()
+        plot.nations()
     if options.animation:
         plot.make_frames()
         animate()
@@ -67,6 +78,7 @@ def process_options():
         date = datetime.datetime.strptime(options.map, '%Y-%m-%d')
         print('Drawing for %s' % date)
         subset = plot.get_one_date(date)
+        print(subset)
         plot.one_plot(subset, date)
 
 process_options()

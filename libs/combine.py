@@ -1,4 +1,6 @@
 """Store the data in a nice big dataframe"""
+from datetime import datetime, timedelta
+import datetime
 import pandas as pd
 import geopandas as gpd
 
@@ -9,9 +11,16 @@ class Combine:
     def __init__(self):
         """Init"""
         self.timeseries = []
+        self.countries = None
+        self.description = None
+        self.merged = None
+        self.cc = None
+        self.populations = []
+        self.national_populations =  None
 
     def process(self):
         """Do it"""
+        self.timeseries.append(BETimeseries().get_data())
         self.timeseries.append(NLTimeseries().get_data())
         self.timeseries.append(UKTimeseries().get_data())
         self.get_combined_data()
@@ -19,6 +28,10 @@ class Combine:
     def get(self):
         """Return the data set"""
         return self.merged
+
+    def get_populations(self):
+        """National populations for the calculations that need it"""
+        self.national_populations = pd.read_csv('data/populations.csv',  delimiter=',')
 
     def get_max(self, column):
         """Max value in df"""
@@ -47,7 +60,7 @@ class Combine:
 
     def parse_countries(self, country_str):
         """Sort out country data"""
-        all = ['nl', 'sco', 'eng', 'wal', 'ni']
+        all = ['nl', 'sco', 'eng', 'wal', 'ni', 'be']
         ret = []
         if country_str is None:
             country_list = all
@@ -65,9 +78,34 @@ class Combine:
                 country = 'wal'
             if 'ire' in country:
                 country = 'ni'
+            if 'bel' in country:
+                country = 'be'
             ret.append(country)
+        self.cc = ret
         self.countries = list(set(all) - set(ret))
         self.description = '_'.join(ret)
+
+    def project_for_date(self, date):
+        """Project infections per Gemeente and make league table"""
+        if date is None:
+            date = self.merged.index.max().strftime('%Y%m%d')
+        datemax = datetime.datetime.strptime(date, '%Y%m%d')
+        datemin = (datemax - timedelta(days = 4)).strftime('%Y%m%d')
+        self.merged = self.merged.query(f'{datemin} <= Datum <= {date}')
+        self.merged = self.merged.groupby(['Gemeentecode']) \
+                      .agg({'Aantal': 'sum', 'Gemeentenaam': 'first', \
+                      'pop_pc': 'first', 'population': 'first', 'country': 'first'})
+        self.merged['percapita'] = self.merged['Aantal'] / self.merged['pop_pc']
+        self.merged.sort_values(by=['percapita'], ascending=False, inplace=True)
+        print(self.merged.head(20))
+
+    def nation(self):
+        """Get national totals"""
+        self.merged = self.merged.groupby(['country', 'Datum']) \
+                      .agg({'Aantal': 'sum'})
+        self.get_populations()
+        self.national_populations
+        print(self.merged)
 
 
 class Timeseries:
@@ -92,6 +130,88 @@ class Timeseries:
     def get_map(self):
         """Placeholder"""
 
+
+class BETimeseries(Timeseries):
+
+    def __init__(self):
+        """Init"""
+        Timeseries.__init__(self)
+
+    def get_source_data(self):
+        """Get BE source data for infections"""
+        dataframe = pd.read_csv('data/belgium.csv', delimiter=',')
+        dataframe.dropna(inplace=True)
+        dataframe['CASES'] = dataframe['CASES'].replace(['<5'], '0')
+        dataframe.rename(columns={'CASES': 'Aantal',
+                                  'NIS5': 'Gemeentecode',
+                                  'DATE': 'Datum',
+                                  'TX_DESCR_NL': 'Gemeentenaam'}, inplace=True)
+        dataframe.drop(columns=['TX_DESCR_FR', 'TX_ADM_DSTR_DESCR_NL', 'TX_ADM_DSTR_DESCR_FR',
+                               'PROVINCE', 'REGION'], inplace=True)
+        dataframe['Datum'] = pd.to_datetime(dataframe['Datum'])
+        dataframe = self.resample(dataframe)
+        dataframe = dataframe.set_index('Gemeentecode').dropna()
+        merged = dataframe.join(self.pop)
+        merged.index = merged.index.astype('int')
+        #merged.reset_index(inplace=True)
+        merged = merged.join(self.map)
+        merged.reset_index(inplace=True)
+        merged.rename(columns={'index': 'Gemeentecode'}, inplace=True)
+        merged = merged.assign(country='be')
+        print(merged)
+        self.merged = merged
+
+    def resample(self, dataframe):
+        """Timeseries is incomplete, fill it in"""
+        # Normally you would just resample but we have 1500 od gemeentes each needs a
+        # completed dataseries or chorpleths will look very odd
+        idx = pd.date_range(min(dataframe.Datum), max(dataframe.Datum))
+        gems = list(set(dataframe['Gemeentecode'].values))
+        newdata = []
+        for gem in gems:
+            gemdf = dataframe[dataframe['Gemeentecode'] == gem]
+            #gemdf.set_index(gemdf.Datum, inplace=True)
+            default = self.get_row(gemdf.loc[gemdf['Gemeentecode'] == gem])
+            gemdf['strdate'] = gemdf['Datum'].dt.strftime('%Y-%m-%d')
+            for date in idx:
+                fdate = date.strftime('%Y-%m-%d')
+                if fdate not in gemdf['strdate'].values:
+                    newdata.append({'Datum': date,
+                                    'Gemeentecode': default['Gemeentecode'],
+                                    'Gemeentenaam': default['Gemeentenaam'],
+                                    'Aantal': default['Aantal']
+                                    })
+                else:
+                    row = gemdf.loc[gemdf['Datum'] == date]
+                    newdata.append({'Datum': date,
+                                    'Gemeentecode': row['Gemeentecode'].values[0],
+                                    'Gemeentenaam': row['Gemeentenaam'].values[0],
+                                    'Aantal': int(row['Aantal'].values[0])
+                                    })
+        return pd.DataFrame(newdata)
+
+    def get_row(self, series):
+        return {'Datum': series['Datum'].values[0],
+        'Gemeentecode': series['Gemeentecode'].values[0],
+        'Gemeentenaam': series['Gemeentenaam'].values[0],
+        'Aantal': series['Aantal'].values[0]
+        }
+
+    def get_pop(self):
+        """Fetch the Population figures for BE"""
+        pop = pd.read_csv('data/bepop.csv', delimiter=',')
+        pop = pop.set_index('Gemeentecode')
+        self.pop = pop
+
+    def get_map(self):
+        """Get BE map data"""
+        map_df = gpd.read_file('maps/BELGIUM_-_Municipalities.shp')
+        map_df.rename(columns={'CODE_INS': 'Gemeentecode',
+                               'ADMUNADU': 'Gemeentenaam'}, inplace=True)
+        map_df['Gemeentecode'] = map_df['Gemeentecode'].astype('int')
+        map_df.drop(columns=['Gemeentenaam'], inplace=True)
+        map_df = map_df.set_index('Gemeentecode')
+        self.map = map_df
 
 class NLTimeseries(Timeseries):
     """Dutch Timeseries"""

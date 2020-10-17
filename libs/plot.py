@@ -20,9 +20,9 @@ class Plot:
         plt.xlabel("Date")
         plt.ylabel("Daily Cases per 100.000 - rolling 7 day mean")
         for nation in self.combined.cc:
-            gem = self.combined.merged.xs(nation, level='country').reset_index()
+            gem = self.combined.merged[self.combined.merged['country'] == nation]
             print(gem)
-            gem.plot(y='Aantal', x='Datum', label=nation, ax=axis)
+            gem.plot(y='radaily_pc', label=nation, ax=axis)
         plt.grid(which='major', alpha=0.5)
         plt.grid(which='minor', alpha=0.2)
         plt.tight_layout(pad=2)

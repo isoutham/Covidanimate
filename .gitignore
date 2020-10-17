@@ -3,3 +3,5 @@
 libs/__pycache__/
 *.csv
 *.geojson
+*.shp
+.idea/

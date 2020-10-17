@@ -1,28 +1,33 @@
 """Where is Elmer"""
 import datetime
 import os
+import glob
 import sys
 from optparse import OptionParser
 import imageio
 from libs.combine import Combine
 from libs.plot import Plot
 
+DIRECTORY = 'figures5/'
 
 def animate():
     """Create movie from frames"""
     images = []
-    directory = 'figures5/'
-    for filename in os.listdir(directory):
-        if filename < '2020-02-28.png':
+    for filename in os.listdir(DIRECTORY):
+        if filename < '2020-03-23.png':
             continue
         if filename.endswith(".png"):
-            images.append(os.path.join(directory, filename))
+            images.append(os.path.join(DIRECTORY, filename))
     idata = []
     for i in sorted(images):
         idata.append(imageio.imread(i))
     filename = 'choropleth.mp4'
     imageio.mimsave(filename, idata)
 
+def clear_images():
+    files = glob.glob(f'{DIRECTORY}/*.png')
+    for f in files:
+        os.remove(f)
 
 def parse_regions(region_str):
     """Split a string"""
@@ -57,8 +62,9 @@ def process_options():
                       help="Data by Nation")
     (options, _) = parser.parse_args()
     regions = parse_regions(options.regions)
-    combined = Combine()
+    combined = Combine(options)
     combined.parse_countries(options.country)
+
     combined.process()
     plot = Plot(combined, regions)
     if options.gemeente:
@@ -69,9 +75,9 @@ def process_options():
     if options.league:
         combined.project_for_date(None)
     if options.nation:
-        combined.nation()
         plot.nations()
     if options.animation:
+        clear_images()
         plot.make_frames()
         animate()
     if options.map is not None:

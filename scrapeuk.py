@@ -23,6 +23,9 @@ cases = {
     "newCasesBySpecimenDate": "newCasesBySpecimenDate",
     "cumCasesBySpecimenDate": "cumCasesBySpecimenDate"
 }
+deaths = {
+    "newDeaths28DaysByPublishDate": "newDeaths28DaysByPublishDate"
+        }
 tests = {
     "date": "date",
     "areaName": "areaName",
@@ -32,6 +35,12 @@ tests = {
 }
 #api = Cov19API(filters=uk, structure=tests)
 #api.get_csv(save_as="data/tests.csv")
+
+#api = Cov19API(filters=ltla, structure=deaths)
+#api.get_csv(save_as="data/ukdeath.csv")
+
+api = Cov19API(filters=uk, structure=cases)
+api.get_csv(save_as="data/ukt.csv")
 
 api = Cov19API(filters=ltla, structure=cases)
 api.get_csv(save_as="data/uk.csv")

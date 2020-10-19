@@ -55,16 +55,33 @@ class Plot:
             'facecolor': 'black',
             'edgecolor': 'black'
         }
-        axis.set_title(date.strftime('%d-%m-%Y'), color='white', fontsize=20)
-        #merged.plot(column='radaily_pc', vmax=self.combined.get_max('radaily_pc'), vmin=0,
-        merged.plot(column='radaily_pc', vmax=20, vmin=0,
-                    ax=axis, legend=False,
+        #title = date.strftime('%A %B %-d')
+        title = date.strftime('%d-%m-%Y')
+        #axis.set_title(title, loc='left', color='white',
+                       #fontsize=20, fontname='Tahoma')
+        #vmax=self.combined.get_max('weekly_pc') / 2
+        vmax=250
+        vmin = 0
+        merged.plot(column='weekly_pc', vmax=vmax, vmin=vmin,
+                    ax=axis, legend=True,
                     cmap=cmap, **style_kwds)
+        axis.annotate(title,
+                      xy=(0.1, .1),
+                      xycoords='figure fraction',
+                      horizontalalignment='left',
+                      verticalalignment='top',
+                      fontsize=16, color='white')
+        axis.annotate('7 day infection totals per area',
+                      xy=(0.1, .07),
+                      xycoords='figure fraction',
+                      horizontalalignment='left',
+                      verticalalignment='top',
+                      fontsize=8, color='white')
         axis.axis('off')
         # plt.figtext(0.3, 0.14, "Covid Confirmed Cases per 100.000 inhabitants",
         # ha="center",
         # fontsize=12, bbox={"facecolor": "white", "alpha": 0.5, "pad": 5})
-        plt.tight_layout(pad=0.1)
+        plt.tight_layout(pad=0.5)
         plt.savefig('figures5/%s.png' % date.strftime('%Y-%m-%d'))
         plt.close(fig)
 

@@ -80,7 +80,15 @@ class Combine:
         dataframe['radaily'] = dataframe.groupby('Gemeentecode',
                                                  sort=False)['Aantal'] \
             .transform(lambda x: x.rolling(7, 1).mean())
+        dataframe['weekly'] = dataframe.groupby('Gemeentecode',
+                                                 sort=False)['Aantal'] \
+            .transform(lambda x: x.rolling(7).sum())
         dataframe['radaily_pc'] = dataframe['radaily'] / dataframe['pop_pc']
+        dataframe['weekly_pc'] = dataframe['weekly'] / dataframe['pop_pc']
+        if self.options.startdate is not None:
+            dataframe = dataframe.query(f'{self.options.startdate} <= Datum')
+        if self.options.enddate is not None:
+            dataframe = dataframe.query(f'Datum <= {self.options.enddate}')
         print('Finished calculating combined data')
         self.merged = dataframe
 
@@ -378,7 +386,7 @@ class DETimeseries(Timeseries):
         self.pop = dataframe
 
     def get_source_data(self):
-        """Get UK source data for infections"""
+        """Get DE source data for infections"""
         dataframe = pd.read_excel(
             'data/germany.xlsx', sheet_name='BL_7-Tage-Fallzahlen', skiprows=[0, 1])
         # Rename columns
@@ -404,5 +412,4 @@ class DETimeseries(Timeseries):
         map_df = gpd.read_file('maps/germany.geojson')
         map_df.rename(columns={'name': 'Gemeentenaam'}, inplace=True)
         map_df = map_df.set_index("Gemeentenaam")
-        print(map_df)
         self.map = map_df

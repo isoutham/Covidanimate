@@ -22,7 +22,7 @@ def animate():
     for i in sorted(images):
         idata.append(imageio.imread(i))
     filename = 'choropleth.mp4'
-    imageio.mimsave(filename, idata)
+    imageio.mimsave(filename, idata, fps=3)
 
 def clear_images():
     files = glob.glob(f'{DIRECTORY}/*.png')
@@ -60,6 +60,13 @@ def process_options():
     parser.add_option("-n", "--nation",
                       action="store_true", default=False, dest="nation",
                       help="Data by Nation")
+    parser.add_option("-s", "--start",
+                      action="store", default=None, dest="startdate",
+                      help="Start date from animation yyyymmdd")
+    parser.add_option("-e", "--end",
+                      action="store", default=None, dest="enddate",
+                      help="Start date from animation yyyymmdd")
+
     (options, _) = parser.parse_args()
     regions = parse_regions(options.regions)
     combined = Combine(options)

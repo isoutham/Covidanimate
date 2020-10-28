@@ -27,10 +27,10 @@ class Combine:
             self.timeseries.append(NLTimeseries(False).national())
             self.combine_national()
         else:
-            self.timeseries.append(DETimeseries().get_data())
-            self.timeseries.append(BETimeseries().get_data())
+            #self.timeseries.append(DETimeseries().get_data())
+            #self.timeseries.append(BETimeseries().get_data())
             self.timeseries.append(NLTimeseries().get_data())
-            self.timeseries.append(UKTimeseries().get_data())
+            #self.timeseries.append(UKTimeseries().get_data())
             self.get_combined_data()
 
     def combine_national(self):
@@ -49,6 +49,13 @@ class Combine:
         self.merged['radaily_pc'] = self.merged.groupby('country',
                                                         sort=False)['gpd-pc'] \
             .transform(lambda x: x.rolling(7, 1).mean())
+        self.merged['raweekly_pc'] = self.merged.groupby('country',
+                                                        sort=False)['gpd-pc'] \
+            .transform(lambda x: x.rolling(7).sum())
+        if self.options.startdate is not None:
+            dataframe = dataframe.query(f'{self.options.startdate} <= Datum')
+        if self.options.enddate is not None:
+            dataframe = dataframe.query(f'Datum <= {self.options.enddate}')
 
     def get(self):
         """Return the data set"""

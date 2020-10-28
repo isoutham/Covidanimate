@@ -18,11 +18,11 @@ class Plot:
         plt.style.use('dark_background')
         _, axis = plt.subplots(1, figsize=(14, 7))
         plt.xlabel("Date")
-        plt.ylabel("Daily Cases per 100.000 - rolling 7 day mean")
+        plt.ylabel("Weekly Cases per 100.000 - rolling 7 day averge")
         for nation in self.combined.cc:
             gem = self.combined.merged[self.combined.merged['country'] == nation]
             print(gem)
-            gem.plot(y='radaily_pc', label=nation, ax=axis)
+            gem.plot(y='raweekly_pc', label=nation, ax=axis)
         plt.grid(which='major', alpha=0.5)
         plt.grid(which='minor', alpha=0.2)
         plt.tight_layout(pad=2)
@@ -60,7 +60,7 @@ class Plot:
         #axis.set_title(title, loc='left', color='white',
                        #fontsize=20, fontname='Tahoma')
         #vmax=self.combined.get_max('weekly_pc') / 2
-        vmax=250
+        vmax=400
         vmin = 0
         merged.plot(column='weekly_pc', vmax=vmax, vmin=vmin,
                     ax=axis, legend=True,

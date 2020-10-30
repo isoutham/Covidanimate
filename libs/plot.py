@@ -22,9 +22,10 @@ class Plot:
         for nation in self.combined.cc:
             gem = self.combined.merged[self.combined.merged['country'] == nation]
             print(gem)
-            gem.plot(y='raweekly_pc', label=nation, ax=axis)
+            gem.plot(y='raweekly_pc', label=self.combined.countries_long[nation], ax=axis)
         plt.grid(which='major', alpha=0.5)
         plt.grid(which='minor', alpha=0.2)
+        axis.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), shadow=True, ncol=2)
         plt.tight_layout(pad=2)
         plt.show()
 

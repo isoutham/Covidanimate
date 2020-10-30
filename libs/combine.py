@@ -18,6 +18,9 @@ class Combine:
         self.cc = None
         self.populations = []
         self.national_populations = None
+        self.countries_long = {'nl': 'The Netherlands', 'sco': 'Scotland', 'eng': 'England', 
+                             'wal': 'Wales', 'ni': 'Northern Ireland', 'be': 'Belgium',
+                             'de': 'Germany'}
 
     def process(self):
         """Do it"""
@@ -53,9 +56,9 @@ class Combine:
                                                         sort=False)['gpd-pc'] \
             .transform(lambda x: x.rolling(7).sum())
         if self.options.startdate is not None:
-            dataframe = dataframe.query(f'{self.options.startdate} <= Datum')
+            self.merged = self.merged.query(f'{self.options.startdate} <= Datum')
         if self.options.enddate is not None:
-            dataframe = dataframe.query(f'Datum <= {self.options.enddate}')
+            self.merged = self.merged.query(f'Datum <= {self.options.enddate}')
 
     def get(self):
         """Return the data set"""
@@ -101,10 +104,9 @@ class Combine:
 
     def parse_countries(self, country_str):
         """Sort out country data"""
-        all = ['nl', 'sco', 'eng', 'wal', 'ni', 'be', 'de']
         ret = []
         if country_str is None:
-            country_list = all
+            country_list = self.countries_long.keys()
         else:
             country_list = country_str.split(',')
         for country in country_list:
@@ -125,7 +127,7 @@ class Combine:
                 country = 'de'
             ret.append(country)
         self.cc = ret
-        self.countries = list(set(all) - set(ret))
+        self.countries = list(set(self.countries_long.keys()) - set(ret))
         self.description = '_'.join(ret)
 
     def project_for_date(self, date):

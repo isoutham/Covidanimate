@@ -42,7 +42,7 @@ class Plot:
         ani = animation.FuncAnimation(self.fig, self.animate_callback, frames = len(self.dates), interval=10)
         Writer = animation.writers['ffmpeg']
         writer = Writer(fps=5, metadata=dict(artist='Me'), bitrate=1800)
-        ani.save('animation_video.mp4', writer=writer)
+        ani.save('National_animation.mp4', writer=writer)
 
     def animate_callback(self, count):
         enddate = self.dates[count].strftime('%Y%m%d')

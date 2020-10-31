@@ -8,9 +8,36 @@ https://github.com/J535D165/CoronaWatchNL
 
 This is a collation of many data sources that is marvellously compiled and maintained by the University of Utrecht.
 
-scrapeuk.py will pull the data for the UK from the PHE API.
-There is data in the data directory to use the program without scraping.
-
-Just check it out into a parallel directory and run animate.py -n for NL animation or animate.py -u for the UK.
+sh ./update.sh will update the data sources (assuemes you have CoronaWatchNL cloned)
 
 Is written in python 3.8
+
+##Countries
+England
+Wales
+Scotland
+Northern Ireland
+Netherlands
+Belgium
+
+##Animated choropleth (local areas)
+
+animate.py -a -c 'country'
+
+##Local Area graphs
+
+animate.py -g -r 'list of local areas'
+eg.
+animate.py -g -r 'Amsterdam,Rotterdam,Liverpool,Leeds'
+
+##National graphs
+animate.py -n -c 'countries'
+eg.
+animate.py -n -c 'Netherlands,Belgium'
+
+##Animated National Graphs
+animate.py -n -a -c 'countries'
+eg.
+animate.py -n -a -c 'Netherlands,Belgium'
+
+

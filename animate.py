@@ -82,7 +82,11 @@ def process_options():
     if options.league:
         combined.project_for_date(None)
     if options.nation:
-        plot.nations()
+        if options.animation:
+            plot.nations_animate()
+            return
+        else:
+            plot.nations()
     if options.animation:
         clear_images()
         plot.make_frames()

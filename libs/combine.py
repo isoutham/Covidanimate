@@ -1,7 +1,6 @@
 """Store the data in a nice big dataframe"""
 import sys
 from datetime import datetime, timedelta
-import datetime
 import pandas as pd
 import geopandas as gpd
 
@@ -201,12 +200,13 @@ class JHU:
         self.load()
 
     def get_country(self, country):
+        """Check Country is in JHU data"""
         row = self.dataframe.loc[self.dataframe['Combined_Key'] == country]
         if len(row) == 0:
             return False
         self.combined.countries_long[row['iso2'].values[0].lower()] = country
-        self.combined.national_populations[row['iso2'].values[0].lower()] = row['Population'].values[0]
-        print(country)
+        self.combined.national_populations[row['iso2'].values[0].lower()] \
+                                           = row['Population'].values[0]
         return row['iso2'].values[0].lower()
 
     def load(self):
@@ -216,11 +216,11 @@ class JHU:
         dataframe['Combined_Key'] = dataframe['Combined_Key'].str.lower()
         dataframe['Population'] = dataframe['Population'] / 1e6
         self.dataframe = dataframe
-        print(dataframe)
 
 class XXTimeseries(Timeseries):
     """Generic JHU Data class"""
 
+    # TODO: Duplicated code
     JHD = '../COVID-19/csse_covid_19_data'
 
     def __init__(self, process=True, country=None):

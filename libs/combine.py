@@ -20,7 +20,7 @@ class Combine:
         self.national_populations = None
         self.get_populations()
         self.countries_long = {'nl': 'The Netherlands', 'sco': 'Scotland', 'eng': 'England',
-                             'wal': 'Wales', 'ni': 'Northern Ireland'}
+                               'wal': 'Wales', 'ni': 'Northern Ireland'}
         self.jhu = JHU(self)
 
     def process(self):
@@ -28,7 +28,7 @@ class Combine:
         for nation in self.cc:
             usejhu = True
             if self.options.nation:
-                if nation in [ 'wal', 'sco', 'eng']:
+                if nation in ['wal', 'sco', 'eng']:
                     self.timeseries.append(UKTimeseries(False).national())
                     usejhu = False
                 if nation == 'nl':
@@ -36,9 +36,9 @@ class Combine:
                     usejhu = False
                 if usejhu:
                     self.timeseries.append(XXTimeseries(False,
-                                    {nation: self.countries_long[nation]}).national())
+                                                        {nation: self.countries_long[nation]}).national())
             else:
-                if nation in [ 'wales', 'scotland', 'england']:
+                if nation in ['wales', 'scotland', 'england']:
                     self.timeseries.append(UKTimeseries(False).get_data())
                     usejhu = False
                 if nation == 'nl':
@@ -68,7 +68,7 @@ class Combine:
                                                         sort=False)['gpd-pc'] \
             .transform(lambda x: x.rolling(7, 1).mean())
         self.merged['raweekly_pc'] = self.merged.groupby('country',
-                                                        sort=False)['gpd-pc'] \
+                                                         sort=False)['gpd-pc'] \
             .transform(lambda x: x.rolling(7).sum())
         if self.options.startdate is not None:
             self.merged = self.merged.query(f'{self.options.startdate} <= Datum')
@@ -106,7 +106,7 @@ class Combine:
                                                  sort=False)['Aantal'] \
             .transform(lambda x: x.rolling(7, 1).mean())
         dataframe['weekly'] = dataframe.groupby('Gemeentecode',
-                                                 sort=False)['Aantal'] \
+                                                sort=False)['Aantal'] \
             .transform(lambda x: x.rolling(7).sum())
         dataframe['radaily_pc'] = dataframe['radaily'] / dataframe['pop_pc']
         dataframe['weekly_pc'] = dataframe['weekly'] / dataframe['pop_pc']
@@ -203,7 +203,7 @@ class JHU:
             return False
         self.combined.countries_long[row['iso2'].values[0].lower()] = country
         self.combined.national_populations[row['iso2'].values[0].lower()] \
-                                           = row['Population'].values[0]
+            = row['Population'].values[0]
         return row['iso2'].values[0].lower()
 
     def load(self):
@@ -213,6 +213,7 @@ class JHU:
         dataframe['Combined_Key'] = dataframe['Combined_Key'].str.lower()
         dataframe['Population'] = dataframe['Population'] / 1e6
         self.dataframe = dataframe
+
 
 class XXTimeseries(Timeseries):
     """Generic JHU Data class"""
@@ -228,7 +229,7 @@ class XXTimeseries(Timeseries):
 
     def national(self):
         """Get national totals"""
-        timeseries='csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
+        timeseries = 'csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
         file = f'{self.JHD}/{timeseries}'
         dataframe = pd.read_csv(file, delimiter=',')
         dataframe['Country/Region'] = dataframe['Country/Region'].str.lower()
@@ -241,9 +242,10 @@ class XXTimeseries(Timeseries):
         dataframe.dropna(inplace=True)
         dataframe = dataframe.reset_index()
         dataframe.rename(columns={'index': 'Datum'}, inplace=True)
-        ## Do not have cc
+        # Do not have cc
         dataframe = dataframe.assign(country=self.countrycode)
         return dataframe
+
 
 class BETimeseries(Timeseries):
     """Belgium data"""

@@ -3,6 +3,7 @@ import sys
 from datetime import datetime, timedelta
 import pandas as pd
 import geopandas as gpd
+import numpy as np
 
 
 class Combine:
@@ -234,6 +235,7 @@ class XXTimeseries(Timeseries):
         dataframe = pd.read_csv(file, delimiter=',')
         dataframe['Country/Region'] = dataframe['Country/Region'].str.lower()
         row = dataframe.loc[dataframe['Country/Region'] == self.country]
+        row = row.loc[row['Province/State'].isnull()]
         row = row.reset_index(drop=True)
         row.drop(columns=['Province/State', 'Lat', 'Long'], inplace=True)
         row.set_index('Country/Region', inplace=True)

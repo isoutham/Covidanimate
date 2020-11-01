@@ -1,4 +1,5 @@
 """Store the data in a nice big dataframe"""
+import sys
 from datetime import datetime, timedelta
 import datetime
 import pandas as pd
@@ -18,33 +19,48 @@ class Combine:
         self.cc = None
         self.populations = []
         self.national_populations = None
-        self.countries_long = {'nl': 'The Netherlands', 'sco': 'Scotland', 'eng': 'England', 
-                             'wal': 'Wales', 'ni': 'Northern Ireland', 'be': 'Belgium',
-                             'de': 'Germany'}
+        self.get_populations()
+        self.countries_long = {'nl': 'The Netherlands', 'sco': 'Scotland', 'eng': 'England',
+                             'wal': 'Wales', 'ni': 'Northern Ireland'}
+        self.jhu = JHU(self)
 
     def process(self):
         """Do it"""
+        for nation in self.cc:
+            usejhu = True
+            if self.options.nation:
+                if nation == 'uk':
+                    self.timeseries.append(UKTimeseries(False).national())
+                    usejhu = False
+                if nation == 'nl':
+                    self.timeseries.append(NLTimeseries(False).national())
+                    usejhu = False
+                if usejhu:
+                    self.timeseries.append(XXTimeseries(False,
+                                    {nation: self.countries_long[nation]}).national())
+            else:
+                if nation == 'uk':
+                    self.timeseries.append(UKTimeseries(False).get_data())
+                    usejhu = False
+                if nation == 'nl':
+                    self.timeseries.append(NLTimeseries(False).get_data())
+                    usejhu = False
+                if usejhu:
+                    self.timeseries.append(XXTimeseries(False).get_data())
+        if len(self.timeseries) == 0:
+            print('No country Data to process')
+            sys.exit()
         if self.options.nation:
-            self.timeseries.append(BETimeseries(False).national())
-            self.timeseries.append(UKTimeseries(False).national())
-            self.timeseries.append(NLTimeseries(False).national())
             self.combine_national()
         else:
-            #self.timeseries.append(DETimeseries().get_data())
-            #self.timeseries.append(BETimeseries().get_data())
-            self.timeseries.append(NLTimeseries().get_data())
-            #self.timeseries.append(UKTimeseries().get_data())
             self.get_combined_data()
 
     def combine_national(self):
         """Combine national totals"""
         self.merged = pd.concat(self.timeseries)
-        print(self.merged)
         self.merged['Datum'] = pd.to_datetime(self.merged['Datum'])
-        self.get_populations()
         self.merged = self.merged.set_index('Datum')
         self.merged.sort_index(inplace=True)
-        print(self.merged)
         for country in self.cc:
             self.merged.loc[(self.merged.country == country), 'population'] \
                 = self.national_populations[country] * 10
@@ -111,24 +127,27 @@ class Combine:
             country_list = country_str.split(',')
         for country in country_list:
             country = country.lower()
+            count = None
             if 'nether' in country:
-                country = 'nl'
+                count = 'nl'
             if 'scot' in country:
-                country = 'sco'
+                count = 'sco'
             if 'eng' in country:
-                country = 'eng'
+                count = 'eng'
             if 'wal' in country:
-                country = 'wal'
+                count = 'wal'
             if 'ire' in country:
-                country = 'ni'
-            if 'bel' in country:
-                country = 'be'
-            if 'ger' in country:
-                country = 'de'
-            ret.append(country)
+                count = 'ni'
+            if count is not None:
+                ret.append(country)
+            else:
+                retcountry = self.jhu.get_country(country)
+                if retcountry:
+                    ret.append(retcountry)
         self.cc = ret
         self.countries = list(set(self.countries_long.keys()) - set(ret))
         self.description = '_'.join(ret)
+        print(self.cc, self.countries)
 
     def project_for_date(self, date):
         """Project infections per Gemeente and make league table"""
@@ -169,6 +188,65 @@ class Timeseries:
     def get_map(self):
         """Placeholder"""
 
+
+class JHU:
+    """Get data from John Hopkins"""
+
+    JHD = '../COVID-19/csse_covid_19_data'
+
+    def __init__(self, combined):
+        """Init"""
+        self.dataframe = None
+        self.combined = combined
+        self.load()
+
+    def get_country(self, country):
+        row = self.dataframe.loc[self.dataframe['Combined_Key'] == country]
+        if len(row) == 0:
+            return False
+        self.combined.countries_long[row['iso2'].values[0].lower()] = country
+        self.combined.national_populations[row['iso2'].values[0].lower()] = row['Population'].values[0]
+        print(country)
+        return row['iso2'].values[0].lower()
+
+    def load(self):
+        """Load JHU lookup table"""
+        dataframe = pd.read_csv(f'{self.JHD}/UID_ISO_FIPS_LookUp_Table.csv',
+                                delimiter=',')
+        dataframe['Combined_Key'] = dataframe['Combined_Key'].str.lower()
+        dataframe['Population'] = dataframe['Population'] / 1e6
+        self.dataframe = dataframe
+        print(dataframe)
+
+class XXTimeseries(Timeseries):
+    """Generic JHU Data class"""
+
+    JHD = '../COVID-19/csse_covid_19_data'
+
+    def __init__(self, process=True, country=None):
+        """Init"""
+        Timeseries.__init__(self, process)
+        self.countrycode = list(country.keys())[0]
+        self.country = country[self.countrycode]
+
+    def national(self):
+        """Get national totals"""
+        timeseries='csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
+        file = f'{self.JHD}/{timeseries}'
+        dataframe = pd.read_csv(file, delimiter=',')
+        dataframe['Country/Region'] = dataframe['Country/Region'].str.lower()
+        row = dataframe.loc[dataframe['Country/Region'] == self.country]
+        row = row.reset_index(drop=True)
+        row.drop(columns=['Province/State', 'Lat', 'Long'], inplace=True)
+        row.set_index('Country/Region', inplace=True)
+        dataframe = row.T
+        dataframe['Aantal'] = dataframe[self.country] - dataframe[self.country].shift(1)
+        dataframe.dropna(inplace=True)
+        dataframe = dataframe.reset_index()
+        dataframe.rename(columns={'index': 'Datum'}, inplace=True)
+        ## Do not have cc
+        dataframe = dataframe.assign(country=self.countrycode)
+        return dataframe
 
 class BETimeseries(Timeseries):
     """Belgium data"""

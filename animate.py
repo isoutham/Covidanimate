@@ -25,9 +25,10 @@ def animate():
     imageio.mimsave(filename, idata, fps=3)
 
 def clear_images():
+    """Clean up previous runs"""
     files = glob.glob(f'{DIRECTORY}/*.png')
-    for f in files:
-        os.remove(f)
+    for file in files:
+        os.remove(file)
 
 def parse_regions(region_str):
     """Split a string"""
@@ -85,8 +86,7 @@ def process_options():
         if options.animation:
             plot.nations_animate()
             return
-        else:
-            plot.nations()
+        plot.nations()
     if options.animation:
         clear_images()
         plot.make_frames()

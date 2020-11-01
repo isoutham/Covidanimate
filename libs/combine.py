@@ -28,7 +28,7 @@ class Combine:
         for nation in self.cc:
             usejhu = True
             if self.options.nation:
-                if nation == 'uk':
+                if nation in [ 'wal', 'sco', 'eng']:
                     self.timeseries.append(UKTimeseries(False).national())
                     usejhu = False
                 if nation == 'nl':
@@ -38,7 +38,7 @@ class Combine:
                     self.timeseries.append(XXTimeseries(False,
                                     {nation: self.countries_long[nation]}).national())
             else:
-                if nation == 'uk':
+                if nation in [ 'wales', 'scotland', 'england']:
                     self.timeseries.append(UKTimeseries(False).get_data())
                     usejhu = False
                 if nation == 'nl':
@@ -138,7 +138,7 @@ class Combine:
             if 'ire' in country:
                 count = 'ni'
             if count is not None:
-                ret.append(country)
+                ret.append(count)
             else:
                 retcountry = self.jhu.get_country(country)
                 if retcountry:
@@ -146,7 +146,6 @@ class Combine:
         self.cc = ret
         self.countries = list(set(self.countries_long.keys()) - set(ret))
         self.description = '_'.join(ret)
-        print(self.cc, self.countries)
 
     def project_for_date(self, date):
         """Project infections per Gemeente and make league table"""
@@ -160,7 +159,6 @@ class Combine:
                   'pop_pc': 'first', 'population': 'first', 'country': 'first'})
         self.merged['percapita'] = self.merged['Aantal'] / self.merged['pop_pc']
         self.merged.sort_values(by=['percapita'], ascending=False, inplace=True)
-        print(self.merged.head(20))
 
 
 class Timeseries:
@@ -168,7 +166,6 @@ class Timeseries:
 
     def __init__(self, process=True):
         self.merged = None
-        print(process)
         if process:
             self.get_pop()
             self.get_map()

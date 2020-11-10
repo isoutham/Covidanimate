@@ -29,6 +29,7 @@ class Combine:
         for nation in self.cc:
             usejhu = True
             if self.options.nation:
+                print(f'Processing National data {nation}')
                 if nation in ['wal', 'sco', 'eng']:
                     self.timeseries.append(UKTimeseries(False).national())
                     usejhu = False
@@ -37,16 +38,17 @@ class Combine:
                     usejhu = False
                 if usejhu:
                     self.timeseries.append(XXTimeseries(False,
-                                                        {nation: self.countries_long[nation]}).national())
+                                    {nation: self.countries_long[nation]}).national())
             else:
+                print(f'Processing combined data {nation}')
                 if nation in ['wales', 'scotland', 'england']:
-                    self.timeseries.append(UKTimeseries(False).get_data())
+                    self.timeseries.append(UKTimeseries(True).get_data())
                     usejhu = False
                 if nation == 'nl':
-                    self.timeseries.append(NLTimeseries(False).get_data())
+                    self.timeseries.append(NLTimeseries(True).get_data())
                     usejhu = False
                 if usejhu:
-                    self.timeseries.append(XXTimeseries(False).get_data())
+                    self.timeseries.append(XXTimeseries(True).get_data())
         if len(self.timeseries) == 0:
             print('No country Data to process')
             sys.exit()
@@ -64,13 +66,20 @@ class Combine:
         for country in self.cc:
             self.merged.loc[(self.merged.country == country), 'population'] \
                 = self.national_populations[country] * 10
-        self.merged['gpd-pc'] = self.merged['Aantal'] / self.merged['population']
-        self.merged['radaily_pc'] = self.merged.groupby('country',
-                                                        sort=False)['gpd-pc'] \
-            .transform(lambda x: x.rolling(7, 1).mean())
-        self.merged['raweekly_pc'] = self.merged.groupby('country',
-                                                         sort=False)['gpd-pc'] \
-            .transform(lambda x: x.rolling(7).sum())
+        for column in ['Aantal', 'Ziekenhuisopname']:
+            if column not in self.merged.columns:
+                continue
+            pgpd = f"{column}-gpd"
+            radaily = f"{column}-radaily"
+            raweekly = f"{column}-raweekly"
+            self.merged[pgpd] = self.merged[column] / self.merged['population']
+            self.merged[radaily] = self.merged.groupby('country',
+                                                       sort=False)[pgpd] \
+                .transform(lambda x: x.rolling(7, 1).mean())
+            self.merged[raweekly] = self.merged.groupby('country',
+                                                        sort=False)[pgpd] \
+                .transform(lambda x: x.rolling(7).sum())
+
         if self.options.startdate is not None:
             self.merged = self.merged.query(f'{self.options.startdate} <= Datum')
         if self.options.enddate is not None:
@@ -353,11 +362,28 @@ class NLTimeseries(Timeseries):
 
     def national(self):
         """Get national totals"""
+        df1 = self.get_subtotal('Totaal', rename=False, cumulative=True)
+        df2 = self.get_subtotal('Overleden', rename=True, cumulative=True)
+        df3 = self.get_subtotal('Ziekenhuisopname', rename=True, cumulative=True)
+        dataframe = df1.merge(df2, on='Datum')
+        dataframe = dataframe.merge(df3, on='Datum')
+        dataframe = dataframe.assign(country='nl')
+        #dataframe = pd.concat([df1,df2,df3])
+        return dataframe
+
+    def get_subtotal(self, typ, rename=True, cumulative=True):
+        """Get national totals"""
         dataframe = pd.read_csv('../CoronaWatchNL/data/rivm_NL_covid19_national.csv',
                                 delimiter=',')
-        dataframe = dataframe[dataframe['Type'] == 'Totaal']
-        dataframe = dataframe.assign(country='nl')
-        dataframe['Aantal'] = dataframe['Aantal'] - dataframe['Aantal'].shift(1)
+        dataframe = dataframe[dataframe['Type'] == typ]
+        dataframe.drop(columns=['Type'], inplace=True)
+        if cumulative:
+            dataframe['Aantal'] = dataframe['Aantal'] - dataframe['Aantal'].shift(1)
+            print('Done')
+        if rename:
+            dataframe.rename(columns={"Aantal": typ}, inplace=True)
+        dataframe = dataframe.fillna(0)
+        dataframe['Datum'] = pd.to_datetime(dataframe['Datum'])
         return dataframe
 
     def get_pop(self):

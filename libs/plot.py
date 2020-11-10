@@ -8,6 +8,7 @@ from pandas.plotting import register_matplotlib_converters
 from matplotlib.dates import DateFormatter
 register_matplotlib_converters()
 
+
 class Plot:
     """Plots"""
 
@@ -16,49 +17,64 @@ class Plot:
         self.combined = combined
         self.regions = regions
         self.countries = self.combined.countries
+        self.dates = None
+        self.fig = None
+        self.axis = None
 
     def nations(self):
         """Graph country totals"""
         plt.style.use('dark_background')
-        _, axis = plt.subplots(1, figsize=(14, 7))
+        __, axis1 = plt.subplots(1, figsize=(14, 7))
+        axis2 = axis1.twinx()
         plt.xlabel("Date")
-        plt.ylabel("Weekly Cases per 100.000 - rolling 7 day averge")
+        axis1.set_ylabel("Weekly Case per 100K inhabitants (RA)", color="w", fontsize=14)
+        axis2.set_ylabel("Weekly Hospital Admissions per 100K inhabitants (RA)",
+                         color="w", fontsize=14)
         for nation in self.combined.cc:
             gem = self.combined.merged[self.combined.merged['country'] == nation]
-            print(gem)
-            gem.plot(y='raweekly_pc', label=self.combined.countries_long[nation], ax=axis)
+            #gem.plot(y='Aantal-raweekly', label=self.combined.countries_long[nation], ax=axis)
+            gem.plot(y='Aantal-raweekly',
+                     label='Cases ' + self.combined.countries_long[nation],
+                     ax=axis1, linestyle='solid')
+            gem.plot(y='Ziekenhuisopname-raweekly',
+                     label='Admissions ' + self.combined.countries_long[nation],
+                     ax=axis2, linestyle='dotted')
         plt.grid(which='major', alpha=0.5)
         plt.grid(which='minor', alpha=0.2)
-        axis.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), shadow=True, ncol=2)
+        axis1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), shadow=True, ncol=2)
+        #axis2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10), shadow=True, ncol=2)
         plt.tight_layout(pad=2)
-        plt.show()
+        plt.savefig('national.png')
 
     def nations_animate(self):
+        """Animate National graph"""
         self.dates = sorted(list(set(self.combined.merged.index)))
-        self.fig = plt.figure(figsize=(10,6))
-        self.axis = self.fig.add_subplot(1,1,1)
-        self.axis.axis(xmin = 0, xmax = len(self.dates))
-        self.axis.axis(ymin=0,ymax=1000)
-        ani = animation.FuncAnimation(self.fig, self.animate_callback, frames = len(self.dates), interval=10)
-        Writer = animation.writers['ffmpeg']
-        writer = Writer(fps=5, metadata=dict(artist='Me'), bitrate=1800)
+        self.fig = plt.figure(figsize=(10, 6))
+        self.axis = self.fig.add_subplot(1, 1, 1)
+        self.axis.axis(xmin=0, xmax=len(self.dates))
+        self.axis.axis(ymin=0, ymax=1000)
+        ani = animation.FuncAnimation(self.fig, self.animate_callback,
+                                      frames=len(self.dates), interval=10)
+        mp4writer = animation.writers['ffmpeg']
+        writer = mp4writer(fps=5, metadata=dict(artist='Me'), bitrate=1800)
         ani.save('National_animation.mp4', writer=writer)
 
     def animate_callback(self, count):
+        """Calback for the animated line graph"""
         enddate = self.dates[count].strftime('%Y%m%d')
         data = self.combined.merged.query(f'Datum <= {enddate}')
         self.axis.clear()
         for nation in self.combined.cc:
             gem = data[data['country'] == nation]
-            xp = gem.index
-            yp = gem['raweekly_pc']
-            self.axis.plot(xp, yp, label=self.combined.countries_long[nation])
+            xdata = gem.index
+            ydata = gem['Aantal-raweekly']
+            self.axis.plot(xdata, ydata, label=self.combined.countries_long[nation])
         date_form = DateFormatter("%b")
         self.axis.xaxis.set_major_formatter(date_form)
         self.axis.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
-        plt.xlabel('Date',fontsize=12)
-        plt.ylabel('Weekly Cases per 100,000 residents',fontsize=12)
-        plt.title('Covid Cases',fontsize=14)
+        plt.xlabel('Date', fontsize=12)
+        plt.ylabel('Weekly Cases per 100,000 residents', fontsize=12)
+        plt.title('Covid Cases', fontsize=14)
         #plt.legend(title='Nations', bbox_to_anchor=(.5, 1.05), fancybox=True, loc='upper center')
         plt.legend(title='Nations', fancybox=True, loc='upper left')
 
@@ -89,12 +105,8 @@ class Plot:
             'facecolor': 'black',
             'edgecolor': 'black'
         }
-        #title = date.strftime('%A %B %-d')
         title = date.strftime('%d-%m-%Y')
-        #axis.set_title(title, loc='left', color='white',
-                       #fontsize=20, fontname='Tahoma')
-        #vmax=self.combined.get_max('weekly_pc') / 2
-        vmax=400
+        vmax = 400
         vmin = 0
         merged.plot(column='weekly_pc', vmax=vmax, vmin=vmin,
                     ax=axis, legend=True,

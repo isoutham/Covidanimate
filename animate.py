@@ -67,6 +67,9 @@ def process_options():
     parser.add_option("-e", "--end",
                       action="store", default=None, dest="enddate",
                       help="Start date from animation yyyymmdd")
+    parser.add_option("-z", "--hospital",
+                      action="store_true", default=False, dest="hospital",
+                      help="Show hospital admissions if data is available")
 
     (options, _) = parser.parse_args()
     regions = parse_regions(options.regions)

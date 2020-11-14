@@ -66,7 +66,7 @@ class Combine:
         for country in self.cc:
             self.merged.loc[(self.merged.country == country), 'population'] \
                 = self.national_populations[country] * 10
-        for column in ['Aantal', 'Ziekenhuisopname']:
+        for column in ['Aantal', 'Ziekenhuisopname', 'Overleden']:
             if column not in self.merged.columns:
                 continue
             pgpd = f"{column}-gpd"

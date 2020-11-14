@@ -25,24 +25,34 @@ class Plot:
         """Graph country totals"""
         plt.style.use('dark_background')
         __, axis1 = plt.subplots(1, figsize=(14, 7))
-        axis2 = axis1.twinx()
+        axis2 = None
+        if self.combined.options.hospital:
+            axis2 = axis1.twinx()
         plt.xlabel("Date")
         axis1.set_ylabel("Weekly Case per 100K inhabitants (RA)", color="w", fontsize=14)
-        axis2.set_ylabel("Weekly Hospital Admissions per 100K inhabitants (RA)",
-                         color="w", fontsize=14)
+        if axis2 is not None:
+            axis2.set_ylabel("Weekly Hospital Admissions per 100K inhabitants (RA)",
+                             color="w", fontsize=14)
+            axis2.set_ylim(0,10)
         for nation in self.combined.cc:
             gem = self.combined.merged[self.combined.merged['country'] == nation]
             #gem.plot(y='Aantal-raweekly', label=self.combined.countries_long[nation], ax=axis)
             gem.plot(y='Aantal-raweekly',
                      label='Cases ' + self.combined.countries_long[nation],
                      ax=axis1, linestyle='solid')
+            if axis2 is None:
+                continue
             gem.plot(y='Ziekenhuisopname-raweekly',
                      label='Admissions ' + self.combined.countries_long[nation],
+                     ax=axis2, linestyle='dotted')
+            gem.plot(y='Overleden-raweekly',
+                     label='Deaths ' + self.combined.countries_long[nation],
                      ax=axis2, linestyle='dotted')
         plt.grid(which='major', alpha=0.5)
         plt.grid(which='minor', alpha=0.2)
         axis1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), shadow=True, ncol=2)
-        #axis2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10), shadow=True, ncol=2)
+        if axis2 is not None:
+            axis2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10), shadow=True, ncol=2)
         plt.tight_layout(pad=2)
         plt.savefig('national.png')
 

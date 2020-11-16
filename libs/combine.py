@@ -31,7 +31,7 @@ class Combine:
             if self.options.nation:
                 print(f'Processing National data {nation}')
                 if nation in ['wal', 'sco', 'eng']:
-                    self.timeseries.append(UKTimeseries(False).national())
+                    self.timeseries.append(UKTimeseries(False).national(nation))
                     usejhu = False
                 if nation == 'nl':
                     self.timeseries.append(NLTimeseries(False).national())
@@ -41,7 +41,7 @@ class Combine:
                                     {nation: self.countries_long[nation]}).national())
             else:
                 print(f'Processing combined data {nation}')
-                if nation in ['wales', 'scotland', 'england']:
+                if nation in ['wal', 'sco', 'eng']:
                     self.timeseries.append(UKTimeseries(True).get_data())
                     usejhu = False
                 if nation == 'nl':
@@ -431,7 +431,7 @@ class UKTimeseries(Timeseries):
         """Init"""
         Timeseries.__init__(self, process)
 
-    def national(self):
+    def national(self, country):
         """Use national totals"""
         dataframe = pd.read_csv('data/ukt.csv')
         dataframe.rename(columns={"newCasesBySpecimenDate": "Aantal", 'date': 'Datum',
@@ -440,6 +440,7 @@ class UKTimeseries(Timeseries):
         dataframe.loc[(dataframe.Gemeentecode.astype(str).str.startswith('W')), 'country'] = 'wal'
         dataframe.loc[(dataframe.Gemeentecode.astype(str).str.startswith('E')), 'country'] = 'eng'
         dataframe.loc[(dataframe.Gemeentecode.astype(str).str.startswith('N')), 'country'] = 'ni'
+        dataframe = dataframe[dataframe['country'] == country]
         return dataframe
 
     def get_pop(self):

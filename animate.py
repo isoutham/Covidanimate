@@ -8,6 +8,7 @@ import imageio
 from libs.combine import Combine
 from libs.plot import Plot
 
+
 DIRECTORY = 'figures5/'
 
 def animate():
@@ -70,6 +71,9 @@ def process_options():
     parser.add_option("-z", "--hospital",
                       action="store_true", default=False, dest="hospital",
                       help="Show hospital admissions if data is available")
+    parser.add_option("-p", "--pivot",
+                      action="store_true", default=False, dest="pivot",
+                      help="Pivot Data Set")
 
     (options, _) = parser.parse_args()
     regions = parse_regions(options.regions)
@@ -78,6 +82,9 @@ def process_options():
 
     combined.process()
     plot = Plot(combined, regions)
+    if options.pivot:
+        plot.pivot_graph()
+        return
     if options.gemeente:
         if len(regions) == 0:
             print('You must specify a region to graph with -g')

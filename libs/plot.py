@@ -2,6 +2,7 @@
 import matplotlib.pyplot as plt
 import geopandas as gpd
 import pandas as pd
+import pandas_alive
 import matplotlib.animation as animation
 import matplotlib.dates as mdates
 from pandas.plotting import register_matplotlib_converters
@@ -20,6 +21,18 @@ class Plot:
         self.dates = None
         self.fig = None
         self.axis = None
+
+    def pivot_graph(self):
+        """Plot pandas_alive pivot graph"""
+        # Rename te columns to country names
+        renames = {}
+        for column in self.combined.merged:
+            renames[column] = self.combined.countries_long[column].capitalize()
+        self.combined.merged.rename(columns=renames, inplace=True)
+        self.combined.merged.plot_animated(filename='pivot.mp4',
+                      n_visible=len(self.combined.cc),
+                      period_fmt="%d-%m-%Y",
+                      title='Deaths by nation (per capita)',fixed_max=True)
 
     def nations(self):
         """Graph country totals"""

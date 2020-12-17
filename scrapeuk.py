@@ -21,7 +21,8 @@ cases = {
     "areaName": "areaName",
     "areaCode": "areaCode",
     "newCasesBySpecimenDate": "newCasesBySpecimenDate",
-    "cumCasesBySpecimenDate": "cumCasesBySpecimenDate"
+    "cumCasesBySpecimenDate": "cumCasesBySpecimenDate",
+    "cumDeaths28DaysByPublishDate": "cumDeaths28DaysByPublishDate"
 }
 deaths = {
     "newDeaths28DaysByPublishDate": "newDeaths28DaysByPublishDate"

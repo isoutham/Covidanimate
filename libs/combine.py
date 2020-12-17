@@ -9,6 +9,16 @@ import numpy as np
 class Combine:
     """Combine defined countries together"""
 
+    THE_EU = [ 'Austria', 'Italy', 'Belgium', 'Latvia',
+               'Bulgaria', 'Lithuania', 'Croatia',
+               'Luxembourg', 'Cyprus', 'Malta',
+               'Czechia', 'Netherlands', 'Denmark',
+               'Poland', 'Estonia', 'Portugal',
+               'Finland', 'Romania', 'France',
+               'Slovakia', 'Germany', 'Slovenia',
+               'Greece', 'Spain', 'Hungary',
+               'Sweden', 'Ireland' ]
+
     def __init__(self, options):
         """Init"""
         self.options = options
@@ -24,21 +34,33 @@ class Combine:
                                'wal': 'Wales', 'ni': 'Northern Ireland'}
         self.jhu = JHU(self)
 
+    def judat(self):
+        """Dumb helper for another library"""
+        self.timeseries.append(NLTimeseries(False).national(False))
+        self.combine_national(False)
+        #self.merged['Week'] = self.merged.index.strftime('%U')
+        #self.merged = self.merged.groupby(['Week']) \
+            #.agg({'Aantal': 'sum'})
+        print(self.merged)
+
     def process(self):
         """Do it"""
+        cumulative = False
+        if self.options.pivot:
+            cumulative = True
         for nation in self.cc:
             usejhu = True
             if self.options.nation:
                 print(f'Processing National data {nation}')
                 if nation in ['wal', 'sco', 'eng']:
-                    self.timeseries.append(UKTimeseries(False).national(nation))
+                    self.timeseries.append(UKTimeseries(False).national(nation,cumulative))
                     usejhu = False
                 if nation == 'nl':
-                    self.timeseries.append(NLTimeseries(False).national())
+                    self.timeseries.append(NLTimeseries(False).national(cumulative))
                     usejhu = False
                 if usejhu:
                     self.timeseries.append(XXTimeseries(False,
-                                    {nation: self.countries_long[nation]}).national())
+                                    {nation: self.countries_long[nation]}).national(cumulative))
             else:
                 print(f'Processing combined data {nation}')
                 if nation in ['wal', 'sco', 'eng']:
@@ -52,12 +74,34 @@ class Combine:
         if len(self.timeseries) == 0:
             print('No country Data to process')
             sys.exit()
+        if self.options.pivot:
+            self.combine_pivot()
+            return
         if self.options.nation:
             self.combine_national()
-        else:
-            self.get_combined_data()
+            return
+        self.get_combined_data()
 
-    def combine_national(self):
+    def combine_pivot(self):
+        """Pivot data for pandas_alive"""
+        print('Pivotting data')
+        self.merged = pd.concat(self.timeseries)
+        self.merged['Datum'] = pd.to_datetime(self.merged['Datum'])
+        # So we can add it as an option later
+        column = 'Overleden'
+        # Convert to 100K instead of millions
+        for country in self.cc:
+            self.merged.loc[(self.merged.country == country), 'population'] \
+                = self.national_populations[country] * 10
+        # Per-Capita
+        self.merged[column] = self.merged[column] / self.merged['population']
+
+        self.merged = self.merged.pivot(index='Datum',
+                                        columns='country',
+                                        values=column).fillna(0)
+        self.trim_data()
+
+    def combine_national(self, trim=True):
         """Combine national totals"""
         self.merged = pd.concat(self.timeseries)
         self.merged['Datum'] = pd.to_datetime(self.merged['Datum'])
@@ -79,7 +123,10 @@ class Combine:
             self.merged[raweekly] = self.merged.groupby('country',
                                                         sort=False)[pgpd] \
                 .transform(lambda x: x.rolling(7).sum())
+        if(trim):
+            self.trim_data()
 
+    def trim_data(self):
         if self.options.startdate is not None:
             self.merged = self.merged.query(f'{self.options.startdate} <= Datum')
         if self.options.enddate is not None:
@@ -134,6 +181,10 @@ class Combine:
             country_list = self.countries_long.keys()
         else:
             country_list = country_str.split(',')
+        if 'eu' in country_list:
+            country_list.remove('eu')
+            country_list += self.THE_EU
+            print('Setting EU')
         for country in country_list:
             country = country.lower()
             count = None
@@ -145,8 +196,8 @@ class Combine:
                 count = 'eng'
             if 'wal' in country:
                 count = 'wal'
-            if 'ire' in country:
-                count = 'ni'
+            #if 'ni' in country:
+            #    count = 'ni'
             if count is not None:
                 ret.append(count)
             else:
@@ -176,6 +227,7 @@ class Timeseries:
 
     def __init__(self, process=True):
         self.merged = None
+        self.cumulative = False
         if process:
             self.get_pop()
             self.get_map()
@@ -193,6 +245,10 @@ class Timeseries:
 
     def get_map(self):
         """Placeholder"""
+
+    def set_cumulative(self, value):
+        """Daily or cumulative"""
+        self.cumulative = value
 
 
 class JHU:
@@ -236,10 +292,21 @@ class XXTimeseries(Timeseries):
         Timeseries.__init__(self, process)
         self.countrycode = list(country.keys())[0]
         self.country = country[self.countrycode]
+        self.cumullative = False
 
-    def national(self):
-        """Get national totals"""
+
+    def national(self, cumulative):
+        self.set_cumulative(cumulative)
+        """Get columns"""
+        timeseries = 'csse_covid_19_time_series/time_series_covid19_deaths_global.csv'
+        overleden = self.calculate(timeseries, 'Overleden')
         timeseries = 'csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
+        aantal = self.calculate(timeseries, 'Aantal')
+        aantal['Overleden'] = overleden['Overleden']
+        return aantal.assign(country=self.countrycode)
+
+    def calculate(self, timeseries, column):
+        """Get national totals"""
         file = f'{self.JHD}/{timeseries}'
         dataframe = pd.read_csv(file, delimiter=',')
         dataframe['Country/Region'] = dataframe['Country/Region'].str.lower()
@@ -249,12 +316,14 @@ class XXTimeseries(Timeseries):
         row.drop(columns=['Province/State', 'Lat', 'Long'], inplace=True)
         row.set_index('Country/Region', inplace=True)
         dataframe = row.T
-        dataframe['Aantal'] = dataframe[self.country] - dataframe[self.country].shift(1)
+        if not self.cumulative:
+            dataframe[column] = dataframe[self.country] - dataframe[self.country].shift(1)
+        else:
+            dataframe[column] = dataframe[self.country]
+        dataframe.drop(columns=[self.country], inplace=True)
         dataframe.dropna(inplace=True)
         dataframe = dataframe.reset_index()
         dataframe.rename(columns={'index': 'Datum'}, inplace=True)
-        # Do not have cc
-        dataframe = dataframe.assign(country=self.countrycode)
         return dataframe
 
 
@@ -265,8 +334,9 @@ class BETimeseries(Timeseries):
         """Init"""
         Timeseries.__init__(self, process)
 
-    def national(self):
+    def national(self, cumulative):
         """Get national totals"""
+        self.set_cumulative(cumulative)
         dataframe = pd.read_csv('data/belgiumt.csv',
                                 delimiter=',')
         dataframe.dropna(inplace=True)
@@ -354,17 +424,18 @@ class BETimeseries(Timeseries):
 
 
 class NLTimeseries(Timeseries):
-    """Dutch Timeseries"""
 
+    """Dutch Timeseries"""
     def __init__(self, process=True):
         """Init"""
         Timeseries.__init__(self, process)
 
-    def national(self):
+    def national(self, cumulative):
         """Get national totals"""
-        df1 = self.get_subtotal('Totaal', rename=False, cumulative=True)
-        df2 = self.get_subtotal('Overleden', rename=True, cumulative=True)
-        df3 = self.get_subtotal('Ziekenhuisopname', rename=True, cumulative=True)
+        self.set_cumulative(cumulative)
+        df1 = self.get_subtotal('Totaal', rename=False, cumulative=self.cumulative)
+        df2 = self.get_subtotal('Overleden', rename=True, cumulative=self.cumulative)
+        df3 = self.get_subtotal('Ziekenhuisopname', rename=True, cumulative=self.cumulative)
         dataframe = df1.merge(df2, on='Datum')
         dataframe = dataframe.merge(df3, on='Datum')
         dataframe = dataframe.assign(country='nl')
@@ -377,9 +448,9 @@ class NLTimeseries(Timeseries):
                                 delimiter=',')
         dataframe = dataframe[dataframe['Type'] == typ]
         dataframe.drop(columns=['Type'], inplace=True)
-        if cumulative:
+        if not cumulative:
+            print('Cumulative')
             dataframe['Aantal'] = dataframe['Aantal'] - dataframe['Aantal'].shift(1)
-            print('Done')
         if rename:
             dataframe.rename(columns={"Aantal": typ}, inplace=True)
         dataframe = dataframe.fillna(0)
@@ -431,11 +502,18 @@ class UKTimeseries(Timeseries):
         """Init"""
         Timeseries.__init__(self, process)
 
-    def national(self, country):
+    def national(self, country, cumulative):
         """Use national totals"""
+        self.set_cumulative(cumulative)
         dataframe = pd.read_csv('data/ukt.csv')
-        dataframe.rename(columns={"newCasesBySpecimenDate": "Aantal", 'date': 'Datum',
-                                  'areaCode': 'Gemeentecode'}, inplace=True)
+        if cumulative:
+            dataframe.rename(columns={"cumCasesBySpecimenDate": "Aantal", 'date': 'Datum',
+                                      'areaCode': 'Gemeentecode',
+                                      'cumDeaths28DaysByPublishDate': 'Overleden'}, inplace=True)
+        else:
+            dataframe.rename(columns={"newCasesBySpecimenDate": "Aantal", 'date': 'Datum',
+                                      'areaCode': 'Gemeentecode',
+                                      'newDeaths28DaysByPublishDate': 'Overleden'}, inplace=True)
         dataframe.loc[(dataframe.Gemeentecode.astype(str).str.startswith('S')), 'country'] = 'sco'
         dataframe.loc[(dataframe.Gemeentecode.astype(str).str.startswith('W')), 'country'] = 'wal'
         dataframe.loc[(dataframe.Gemeentecode.astype(str).str.startswith('E')), 'country'] = 'eng'

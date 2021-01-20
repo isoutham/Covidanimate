@@ -68,9 +68,9 @@ def process_options():
     parser.add_option("-e", "--end",
                       action="store", default=None, dest="enddate",
                       help="Start date from animation yyyymmdd")
-    parser.add_option("-z", "--hospital",
-                      action="store_true", default=False, dest="hospital",
-                      help="Show hospital admissions if data is available")
+    parser.add_option("-t", "--type",
+                      action="store", default='c', dest="type",
+                      help="choose (c)ases, (h)ospital (d)eaths")
     parser.add_option("-p", "--pivot",
                       action="store_true", default=False, dest="pivot",
                       help="Pivot Data Set")

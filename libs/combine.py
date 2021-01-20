@@ -89,6 +89,7 @@ class Combine:
         self.merged['Datum'] = pd.to_datetime(self.merged['Datum'])
         # So we can add it as an option later
         column = 'Overleden'
+        #column = 'Aantal'
         # Convert to 100K instead of millions
         for country in self.cc:
             self.merged.loc[(self.merged.country == country), 'population'] \
@@ -100,6 +101,7 @@ class Combine:
                                         columns='country',
                                         values=column).fillna(0)
         self.trim_data()
+        print(self.merged)
 
     def combine_national(self, trim=True):
         """Combine national totals"""

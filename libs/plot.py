@@ -39,46 +39,34 @@ class Plot:
         plt.style.use('dark_background')
         __, axis1 = plt.subplots(1, figsize=(14, 7))
         axis2 = None
-        if self.combined.options.hospital:
+        if 'd' in self.combined.options.type:
             axis2 = axis1.twinx()
-            axis2.set_ylim(500)
+            #axis2.set_ylim(500)
+        #axis1.axis(ymin=0, ymax=1000)
         plt.xlabel("Date")
-        axis1.set_ylabel("Weekly Case per 100K inhabitants (RA)", color="w", fontsize=14)
+        axis1.set_ylabel("Cases per 100K inhabitants (RA)", color="w", fontsize=14)
         if axis2 is not None:
-            axis2.set_ylabel("Weekly Hospital Admissions per 100K inhabitants (RA)",
+            axis2.set_ylabel("Per 100K inhabitants (RA)",
                              color="w", fontsize=14)
-            #axis2.set_ylim(0,5)
         for nation in self.combined.cc:
             gem = self.combined.merged[self.combined.merged['country'] == nation]
-            if axis2 is None:
-                gem.plot(y='Aantal-radaily',
-                         label='Cases ' + self.combined.countries_long[nation],
-                         ax=axis1, linestyle='solid')
-                continue
-            axis1.bar(gem.index, gem['Aantal'], alpha=0.8,
-                      label='Cases ' + self.combined.countries_long[nation])
-            axis1.plot(gem.index, gem['Aantal-trend'], linewidth=3,
-                      label='Case Trend ' + self.combined.countries_long[nation])
-            axis2.bar(gem.index, gem['Ziekenhuisopname'], alpha=0.8, color='blue',
-                      label='Admissions ' + self.combined.countries_long[nation])
-            axis2.plot(gem.index, gem['Ziekenhuisopname-trend'], linewidth=3, color='blue',
-                      label='Admissions Trend ' + self.combined.countries_long[nation])
-            #gem.plot(y='Aantal',
-                     #label='Cases ' + self.combined.countries_long[nation],
-                     #ax=axis1)
-            #gem.plot(y='Ziekenhuisopname',
-                     #label='Admissions ' + self.combined.countries_long[nation],
-                     #ax=axis2, linestyle='dotted')
-            #gem.plot(y='Overleden',
-                     #label='Deaths ' + self.combined.countries_long[nation],
-                     #ax=axis2, linestyle='dotted')
-        if self.combined.options.hospital:
-            axis2.set_ylim(0,500)
+            if 'c' in self.combined.options.type:
+                axis1.plot(gem.index, gem['Aantal-radaily'], linewidth=1,
+                         label='Cases Trend ' + self.combined.countries_long[nation])
+            if 'd' in self.combined.options.type:
+                axis2.plot(gem.index, gem['Overleden-radaily'], linewidth=3,
+                         label='Deaths Trend ' + self.combined.countries_long[nation])
+            if 'h' in self.combined.options.type:
+                axis1.plot(gem.index, gem['Ziekenhuisopnamen-radaily'], linewidth=3,
+                         label='Hospitalisation Trend ' + self.combined.countries_long[nation])
         plt.grid(which='major', alpha=0.5)
         plt.grid(which='minor', alpha=0.2)
         axis1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), shadow=True, ncol=2)
         if axis2 is not None:
             axis2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10), shadow=True, ncol=2)
+        date_form = DateFormatter("%b")
+        axis1.xaxis.set_major_formatter(date_form)
+        axis1.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
         plt.tight_layout(pad=2)
         plt.savefig('national.png')
 

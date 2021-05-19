@@ -74,6 +74,9 @@ def process_options():
     parser.add_option("-p", "--pivot",
                       action="store_true", default=False, dest="pivot",
                       help="Pivot Data Set")
+    parser.add_option("-A", "--absolute",
+                      action="store_true", default=False, dest="absolute",
+                      help="Do not calculate per-capita (with -n)")
 
     (options, _) = parser.parse_args()
     regions = parse_regions(options.regions)

@@ -39,25 +39,37 @@ class Plot:
         plt.style.use('dark_background')
         __, axis1 = plt.subplots(1, figsize=(14, 7))
         axis2 = None
-        if 'd' in self.combined.options.type:
+        if 'd' in self.combined.options.type or 'h' in self.combined.options.type:
             axis2 = axis1.twinx()
             #axis2.set_ylim(500)
         #axis1.axis(ymin=0, ymax=1000)
         plt.xlabel("Date")
-        axis1.set_ylabel("Cases per 100K inhabitants (RA)", color="w", fontsize=14)
+        descriptions = {
+           'c': 'Cases',
+           'd': 'Deaths',
+           'h': 'Hospital Admissions'
+        }
+        titles = []
+        cols = ['Aantal-radaily', 'Ziekenhuisopname-radaily', 'Overleden-radaily']
+        units = 'Per 100K Inhabitants (7 Day RA)'
+        if self.combined.options.absolute:
+            cols = ['Aantal-ranonpc', 'Ziekenhuisopname-ranonpc', 'Overleden-ranonpc']
+            titles.append(f'{descriptions[self.combined.options.type[1]]} 7 Day RA')
+        axis1.set_ylabel(f'{descriptions[self.combined.options.type[0]]} {units}',
+                         color="w", fontsize=14)
         if axis2 is not None:
-            axis2.set_ylabel("Per 100K inhabitants (RA)",
+            axis2.set_ylabel(f'{descriptions[self.combined.options.type[1]]} {units}',
                              color="w", fontsize=14)
         for nation in self.combined.cc:
             gem = self.combined.merged[self.combined.merged['country'] == nation]
             if 'c' in self.combined.options.type:
-                axis1.plot(gem.index, gem['Aantal-radaily'], linewidth=1,
+                axis1.plot(gem.index, gem[cols[0]], linewidth=1,
                          label='Cases Trend ' + self.combined.countries_long[nation])
             if 'd' in self.combined.options.type:
-                axis2.plot(gem.index, gem['Overleden-radaily'], linewidth=3,
+                axis2.plot(gem.index, gem[cols[2]], linewidth=3,
                          label='Deaths Trend ' + self.combined.countries_long[nation])
             if 'h' in self.combined.options.type:
-                axis1.plot(gem.index, gem['Ziekenhuisopnamen-radaily'], linewidth=3,
+                axis2.plot(gem.index, gem[cols[1]], linewidth=3,
                          label='Hospitalisation Trend ' + self.combined.countries_long[nation])
         plt.grid(which='major', alpha=0.5)
         plt.grid(which='minor', alpha=0.2)

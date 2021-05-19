@@ -55,9 +55,9 @@ class Combine:
                 if nation in ['wal', 'sco', 'eng']:
                     self.timeseries.append(UKTimeseries(False).national(nation,cumulative))
                     usejhu = False
-                if nation == 'nl':
-                    self.timeseries.append(NLTimeseries(False).national(cumulative))
-                    usejhu = False
+                #if nation == 'nl':
+                    #self.timeseries.append(NLTimeseries(False).national(cumulative))
+                    #usejhu = False
                 if usejhu:
                     self.timeseries.append(XXTimeseries(False,
                                     {nation: self.countries_long[nation]}).national(cumulative))
@@ -112,18 +112,24 @@ class Combine:
         for country in self.cc:
             self.merged.loc[(self.merged.country == country), 'population'] \
                 = self.national_populations[country] * 10
+            self.merged.loc[(self.merged.country == country), 'cname'] \
+                = self.countries_long[country]
         for column in ['Aantal', 'Ziekenhuisopname', 'Overleden']:
             if column not in self.merged.columns:
                 continue
             pgpd = f"{column}-gpd"
             radaily = f"{column}-radaily"
             raweekly = f"{column}-raweekly"
+            ranonpc = f"{column}-ranonpc"
             self.merged[pgpd] = self.merged[column] / self.merged['population']
             self.merged[radaily] = self.merged.groupby('country',
                                                        sort=False)[pgpd] \
                 .transform(lambda x: x.rolling(7, 1).mean())
             self.merged[raweekly] = self.merged.groupby('country',
                                                         sort=False)[pgpd] \
+                .transform(lambda x: x.rolling(7).sum())
+            self.merged[ranonpc] = self.merged.groupby('country',
+                                                        sort=False)[column] \
                 .transform(lambda x: x.rolling(7).sum())
         if(trim):
             self.trim_data()
@@ -190,8 +196,8 @@ class Combine:
         for country in country_list:
             country = country.lower()
             count = None
-            if 'nether' in country:
-                count = 'nl'
+            #if 'nether' in country:
+                #count = 'nl'
             if 'scot' in country:
                 count = 'sco'
             if 'eng' in country:
@@ -292,6 +298,7 @@ class XXTimeseries(Timeseries):
     def __init__(self, process=True, country=None):
         """Init"""
         Timeseries.__init__(self, process)
+        print(country.keys())
         self.countrycode = list(country.keys())[0]
         self.country = country[self.countrycode]
         self.cumullative = False
